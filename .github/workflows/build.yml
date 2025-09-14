@@ -1,0 +1,81 @@
+name: msys2-gtk4-action-workflow
+on:
+  push:
+    # # Sequence of patterns matched against refs/tags
+    # tags:
+    #   - 'v*' # Push events to matching v*, i.e. v1.0, v20.15.10
+    #   - 'c*'
+      
+permissions:
+    contents: write
+
+jobs:
+  build:
+    strategy:
+      matrix:
+        include:
+          - { sys: mingw64, env: x86_64 }
+          - { sys: mingw32, env: i686 }
+          - { sys: ucrt64,  env: ucrt-x86_64 }
+          - { sys: clang64, env: clang-x86_64 }
+    runs-on: windows-latest
+    defaults:
+      run:
+        shell: msys2 {0}
+    steps:
+      - uses: actions/checkout@v4
+
+      - id: msys2
+        uses: msys2/setup-msys2@v2
+        with:
+          msystem: ${{matrix.sys}}
+          update: true
+          install: >-
+            curl
+            git     
+            mingw-w64-${{matrix.env}}-gtk4
+            mingw-w64-${{matrix.env}}-gcc
+            mingw-w64-${{matrix.env}}-toolchain
+            mingw-w64-${{matrix.env}}-openssl
+            mingw-w64-${{matrix.env}}-ca-certificates
+            base-devel
+
+      - continue-on-error: true
+        run: |
+          gcc $(pkg-config --cflags gtk4) -o hello-world-gtk main.c $(pkg-config --libs gtk4)
+
+      - run: |
+          ls -R
+      # - 
+      #   shell: cmd
+      #   run: |
+      #     cd /d "D:/a/msys2-portable/msys2-portable" &&^
+      #     dir
+
+      # - continue-on-error: true
+      #   shell: cmd
+      #   run: |
+      #     cd /d "D:\a\_temp\setup-msys2" &&^
+      #     dir
+          
+            
+      # - run: |
+      #     echo $(pwd) && \
+      #     ls && \
+      #     cd '${{ github.workspace }}' && \
+      #     ls && \
+      #     g++ --version
+          
+      # - name: Archive Release
+      #   uses: thedoctor0/zip-release@master
+      #   with:
+      #     type: 'zip'
+      #     directory: "${{ steps.msys2.outputs.msys2-location }}"
+      #     filename: "${{ github.event.repository.name }}-${{ github.ref_name }}-${{ matrix.sys }}-${{matrix.env}}.zip"
+          
+      # - name: Release prebuilt
+      #   uses: ncipollo/release-action@v1
+      #   with:
+      #     artifacts: "${{ steps.msys2.outputs.msys2-location }}/${{ github.event.repository.name }}-${{ github.ref_name }}-${{ matrix.sys }}-${{matrix.env}}.zip"
+      #     allowUpdates: true
+      #     token: ${{ secrets.GITHUB_TOKEN }}
