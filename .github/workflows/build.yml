@@ -45,91 +45,71 @@ jobs:
 
       - run: |
           ls -R
-      # - 
-      #   shell: cmd
-      #   run: |
-      #     cd /d "D:/a/msys2-portable/msys2-portable" &&^
-      #     dir
 
-      # - continue-on-error: true
-      #   shell: cmd
-      #   run: |
-      #     cd /d "D:\a\_temp\setup-msys2" &&^
-      #     dir
+      - name: Build
+        id: build
+        run: |
+          export PATH="/mingw64/bin:$PATH"
+          export OUT_PATH="./dist"
           
-            
-      # - run: |
-      #     echo $(pwd) && \
-      #     ls && \
-      #     cd '${{ github.workspace }}' && \
-      #     ls && \
-      #     g++ --version
-
-
-    - name: Build
-      id: build
-      run: |
-        export PATH="/mingw64/bin:$PATH"
-        export OUT_PATH="./dist"
-        
-        mkdir -pv "$OUT_PATH"
-        out=$(realpath "$OUT_PATH")
-
-        # copyDLLs copies all required DLLs of the given binaries to the
-        # result directory.
-        copyDLLs() {
-          ldd "$@" \
-            | { grep "=> /mingw64/bin/" || true; } \
-            | cut -d ' ' -f1 \
-            | xargs -I{} cp /mingw64/bin/{} $out/
-        }
-
-        # Copy all of the binary's dependencies to the result directory.
-        copyDLLs "$out/hello-world-gtk.exe"
-
-        # countDLLs returns the number of DLLs in the result directory.
-        # We use this to recursively copy dependencies until no new DLLs are
-        # found.
-        countDLLs() {
-          find $out -type f -name "*.dll" | wc -l
-        }
-
-        # Copy DLLs recursively until no new ones are found.
-        currentCount=$(countDLLs)
-        while true; do
-          copyDLLs $out/*.dll
-
-          newCount=$(countDLLs)
-          (( newCount == currentCount )) && break
-          currentCount=$newCount
-        done
-
-        # Copy the RSVG and GDBus stuff.
-        cp \
-          /mingw64/bin/librsvg*.dll \
-          /mingw64/bin/gdbus.exe \
-          $out
-
-        # Copy the GLib schemas and GTK resources.
-        (
-          cd /mingw64
-          cp --parents -r \
-            share/glib-2.0/schemas/gschemas.compiled \
-            share/gtk-4.0 \
-            share/icons \
-            lib/gdk-pixbuf-2.0 \
+          mkdir -pv "$OUT_PATH"
+          out=$(realpath "$OUT_PATH")
+    
+          # copyDLLs copies all required DLLs of the given binaries to the
+          # result directory.
+          copyDLLs() {
+            ldd "$@" \
+              | { grep "=> /mingw64/bin/" || true; } \
+              | cut -d ' ' -f1 \
+              | xargs -I{} cp /mingw64/bin/{} $out/
+          }
+    
+          # Copy all of the binary's dependencies to the result directory.
+          copyDLLs "$out/hello-world-gtk.exe"
+    
+          # countDLLs returns the number of DLLs in the result directory.
+          # We use this to recursively copy dependencies until no new DLLs are
+          # found.
+          countDLLs() {
+            find $out -type f -name "*.dll" | wc -l
+          }
+    
+          # Copy DLLs recursively until no new ones are found.
+          currentCount=$(countDLLs)
+          while true; do
+            copyDLLs $out/*.dll
+    
+            newCount=$(countDLLs)
+            (( newCount == currentCount )) && break
+            currentCount=$newCount
+          done
+    
+          # Copy the RSVG and GDBus stuff.
+          cp \
+            /mingw64/bin/librsvg*.dll \
+            /mingw64/bin/gdbus.exe \
             $out
-        )
-      - name: Archive Release
-        uses: thedoctor0/zip-release@master
-        with:
-          type: 'zip'
-          directory: "dist"
-          filename: "${{ github.event.repository.name }}-${{ github.ref_name }}-${{ matrix.sys }}-${{matrix.env}}.zip"
-          
-      - name: Release prebuilt
-        uses: ncipollo/release-action@v1
-        with:
-          artifacts: "dist/${{ github.event.repository.name }}-${{ github.ref_name }}-${{ matrix.sys }}-${{matrix.env}}.zip"
-          allowUpdates: true
-          token: ${{ secrets.GITHUB_TOKEN }}
+    
+          # Copy the GLib schemas and GTK resources.
+          (
+            cd /mingw64
+            cp --parents -r \
+              share/glib-2.0/schemas/gschemas.compiled \
+              share/gtk-4.0 \
+              share/icons \
+              lib/gdk-pixbuf-2.0 \
+              $out
+          )
+          - name: Archive Release
+            uses: thedoctor0/zip-release@master
+            with:
+              type: 'zip'
+              directory: "dist"
+              filename: "${{ github.event.repository.name }}-${{ github.ref_name }}-${{ matrix.sys }}-${{matrix.env}}.zip"
+              
+          - name: Release prebuilt
+            uses: ncipollo/release-action@v1
+            with:
+              artifacts: "dist/${{ github.event.repository.name }}-${{ github.ref_name }}-${{ matrix.sys }}-${{matrix.env}}.zip"
+              allowUpdates: true
+              token: ${{ secrets.GITHUB_TOKEN }}
