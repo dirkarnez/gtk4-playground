@@ -18,6 +18,8 @@ jobs:
         include:
           - { sys: mingw64, env: x86_64 }       # - { sys: mingw32, env: i686 } - { sys: ucrt64,  env: ucrt-x86_64 } - { sys: clang64, env: clang-x86_64 }
     runs-on: windows-latest
+    env:
+      installation_path: installation
     defaults:
       run:
         shell: msys2 {0}
@@ -39,9 +41,10 @@ jobs:
             mingw-w64-${{matrix.env}}-ca-certificates
             mingw-w64-${{matrix.env}}-pkg-config
             base-devel
-
+            
       - run: |
-          gcc $(pkg-config --cflags gtk4) -o hello-world-gtk main.c $(pkg-config --libs gtk4)
+          mkdir -pv "${{ env.installation_path }}" && \
+          gcc $(pkg-config --cflags gtk4) -o ./${{ env.installation_path }}/hello-world-gtk.exe main.c $(pkg-config --libs gtk4)
 
       - run: |
           ls -R
@@ -50,10 +53,8 @@ jobs:
         id: build
         run: |
           export PATH="/mingw64/bin:$PATH"
-          export OUT_PATH="./dist"
-          
-          mkdir -pv "$OUT_PATH"
-          out=$(realpath "$OUT_PATH")
+
+          out=$(realpath "${{ env.installation_path }}")
     
           # copyDLLs copies all required DLLs of the given binaries to the
           # result directory.
@@ -104,12 +105,12 @@ jobs:
             uses: thedoctor0/zip-release@master
             with:
               type: 'zip'
-              directory: "dist"
+              directory: "${{ env.installation_path }}"
               filename: "${{ github.event.repository.name }}-${{ github.ref_name }}-${{ matrix.sys }}-${{matrix.env}}.zip"
               
           - name: Release prebuilt
             uses: ncipollo/release-action@v1
             with:
-              artifacts: "dist/${{ github.event.repository.name }}-${{ github.ref_name }}-${{ matrix.sys }}-${{matrix.env}}.zip"
+              artifacts: "${{ env.installation_path }}/${{ github.event.repository.name }}-${{ github.ref_name }}-${{ matrix.sys }}-${{matrix.env}}.zip"
               allowUpdates: true
               token: ${{ secrets.GITHUB_TOKEN }}
