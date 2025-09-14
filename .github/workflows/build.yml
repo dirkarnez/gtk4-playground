@@ -101,16 +101,16 @@ jobs:
               lib/gdk-pixbuf-2.0 \
               $out
           )
-          - name: Archive Release
-            uses: thedoctor0/zip-release@master
-            with:
-              type: 'zip'
-              directory: "${{ env.installation_path }}"
-              filename: "${{ github.event.repository.name }}-${{ github.ref_name }}-${{ matrix.sys }}-${{matrix.env}}.zip"
-              
-          - name: Release prebuilt
-            uses: ncipollo/release-action@v1
-            with:
-              artifacts: "${{ env.installation_path }}/${{ github.event.repository.name }}-${{ github.ref_name }}-${{ matrix.sys }}-${{matrix.env}}.zip"
-              allowUpdates: true
-              token: ${{ secrets.GITHUB_TOKEN }}
+      - name: Archive Release
+        uses: thedoctor0/zip-release@master
+        with:
+          type: 'zip'
+          directory: "${{ env.installation_path }}"
+          filename: "${{ github.event.repository.name }}-${{ github.ref_name }}-${{ matrix.sys }}-${{matrix.env}}.zip"
+          
+      - name: Release prebuilt
+        uses: ncipollo/release-action@v1
+        with:
+          artifacts: "${{ env.installation_path }}/${{ github.event.repository.name }}-${{ github.ref_name }}-${{ matrix.sys }}-${{matrix.env}}.zip"
+          allowUpdates: true
+          token: ${{ secrets.GITHUB_TOKEN }}
